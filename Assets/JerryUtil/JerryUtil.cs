@@ -504,52 +504,6 @@ namespace Jerry
         }
 
         /// <summary>
-        /// 通过id构造LayerMask
-        /// </summary>
-        /// <param name="ids">id组</param>
-        /// <param name="invert">是否反转</param>
-        /// <returns></returns>
-        public static int MakeLayerMask(int[] ids, bool invert = false)
-        {
-            if (ids == null)
-            {
-                return 0;
-            }
-
-            int ret = 0;
-            foreach (int id in ids)
-            {
-                ret |= (1 << id);
-            }
-            if (invert)
-            {
-                ret = ~ret;
-            }
-            return ret;
-        }
-
-        /// <summary>
-        /// 通过name构造LayerMask
-        /// </summary>
-        /// <param name="names">名称组</param>
-        /// <param name="invert">是否反转</param>
-        /// <returns></returns>
-        public static int MakeLayerMask(string[] names, bool invert = false)
-        {
-            if (names == null)
-            {
-                return 0;
-            }
-            int[] ids = new int[names.Length];
-            int idx = 0;
-            foreach (string name in names)
-            {
-                ids[idx++] = LayerMask.NameToLayer(name);
-            }
-            return MakeLayerMask(ids, invert);
-        }
-
-        /// <summary>
         /// 通过name构造LayerMask
         /// </summary>
         /// <param name="oldLayerMask">旧的layerMask</param>
@@ -606,6 +560,24 @@ namespace Jerry
                 }
             }
             return ret;
+        }
+
+        /// <summary>
+        /// 包含
+        /// </summary>
+        /// <param name="mask"></param>
+        /// <param name="check"></param>
+        /// <returns></returns>
+        public static bool LayerMaskContainAny(int mask, int[] check)
+        {
+            foreach (int id in check)
+            {
+                if ((mask & (1 << id)) != 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         #endregion LayerMask处理
