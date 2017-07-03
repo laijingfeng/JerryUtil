@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
 using System.Collections.Generic;
-using System;
+using UnityEngine;
 
 namespace Jerry
 {
@@ -34,7 +34,7 @@ namespace Jerry
             {
                 go = GameObject.Instantiate(data.prefab) as GameObject;
             }
-            
+
             go.SetActive(data.active);
             if (string.IsNullOrEmpty(data.name) == false)
             {
@@ -56,7 +56,7 @@ namespace Jerry
                 go.transform.localPosition = Vector3.zero;
                 go.transform.localEulerAngles = Vector3.zero;
             }
-            
+
             if (data.isStretchUI)
             {
                 (go.transform as RectTransform).offsetMin = Vector2.zero;
@@ -212,7 +212,8 @@ namespace Jerry
         /// 删除所有儿子结点
         /// </summary>
         /// <param name="go"></param>
-        public static void DestroyAllChildren(GameObject go)
+        /// <param name="immediate">是否立即删除，编辑器有时需要</param>
+        public static void DestroyAllChildren(GameObject go, bool immediate = false)
         {
             if (go == null)
             {
@@ -226,9 +227,18 @@ namespace Jerry
                 list.Add(go.transform.GetChild(i).gameObject);
             }
 
-            foreach (GameObject g in list)
+            while (list.Count > 0)
             {
-                UnityEngine.Object.Destroy(g);
+                if (immediate)
+                {
+                    UnityEngine.Object.DestroyImmediate(list[0]);
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(list[0]);
+                }
+                list[0] = null;
+                list.RemoveAt(0);
             }
             list.Clear();
         }
@@ -237,13 +247,14 @@ namespace Jerry
         /// 删除所有儿子结点
         /// </summary>
         /// <param name="comp"></param>
-        public static void DestroyAllChildren(Component comp)
+        /// <param name="immediate">是否立即删除，编辑器有时需要</param>
+        public static void DestroyAllChildren(Component comp, bool immediate = false)
         {
             if (comp == null)
             {
                 return;
             }
-            DestroyAllChildren(comp.gameObject);
+            DestroyAllChildren(comp.gameObject, immediate);
         }
 
         #endregion 删除
@@ -252,11 +263,13 @@ namespace Jerry
 
         /// <summary>
         /// <para>计算UI相对父节点的偏移量</para>
-        /// <para>返回值z轴为0</para>
+        /// <para>返回值z轴为0</para> 
         /// </summary>
         /// <param name="child"></param>
+        /// <param name="includeSelf"></param>
+        /// <param name="checkCanvasName">检查Cavans的名字，子节点如果加了额外的Canvas，可以通过这个参数过滤找到最外层的Canvas</param>
         /// <returns>z轴为0</returns>
-        public static Vector3 CalUIPosRelateToCanvas(Transform child, bool includeSelf = false)
+        public static Vector3 CalUIPosRelateToCanvas(Transform child, bool includeSelf = false, string checkCanvasName = "")
         {
             Vector2 ret = Vector2.zero;
             if (child == null)
@@ -272,7 +285,11 @@ namespace Jerry
                 child = child.parent;
                 if (child.GetComponent<Canvas>() != null)
                 {
-                    break;
+                    if (string.IsNullOrEmpty(checkCanvasName)
+                        || checkCanvasName.Equals(child.name))
+                    {
+                        break;
+                    }
                 }
                 ret += new Vector2(child.localPosition.x, child.localPosition.y);
             }
@@ -286,8 +303,9 @@ namespace Jerry
         /// <param name="pos">世界位置</param>
         /// <param name="canvas">UI的Canvas</param>
         /// <param name="tf">使用结果的UI结点，空则是相对Canvas</param>
+        /// <param name="checkCanvasName">检查Cavans的名字，子节点如果加了额外的Canvas，可以通过这个参数过滤找到最外层的Canvas</param>
         /// <returns></returns>
-        public static Vector3 PosWorld2Canvas(Vector3 pos, Canvas canvas, Transform tf = null)
+        public static Vector3 PosWorld2Canvas(Vector3 pos, Canvas canvas, Transform tf = null, string checkCanvasName = "")
         {
             Vector3 ret = Vector3.zero;
             if (canvas == null)
@@ -296,7 +314,7 @@ namespace Jerry
             }
 
             ret = Camera.main.WorldToScreenPoint(pos);
-            ret = JerryUtil.PosScreen2Canvas(canvas, ret, tf);
+            ret = JerryUtil.PosScreen2Canvas(canvas, ret, tf, checkCanvasName);
 
             return ret;
         }
@@ -307,8 +325,9 @@ namespace Jerry
         /// </summary>
         /// <param name="canvas"></param>
         /// <param name="tf"></param>
+        /// <param name="checkCanvasName">检查Cavans的名字，子节点如果加了额外的Canvas，可以通过这个参数过滤找到最外层的Canvas</param>
         /// <returns></returns>
-        public static Vector3 PosCanvas2Screen(Canvas canvas, Transform tf)
+        public static Vector3 PosCanvas2Screen(Canvas canvas, Transform tf, string checkCanvasName = "")
         {
             if (canvas == null ||
                 tf == null)
@@ -316,7 +335,7 @@ namespace Jerry
                 return Vector2.zero;
             }
 
-            Vector2 pos = JerryUtil.CalUIPosRelateToCanvas(tf, true);
+            Vector2 pos = JerryUtil.CalUIPosRelateToCanvas(tf, true, checkCanvasName);
             return PosCanvas2Screen(canvas, pos);
         }
 
@@ -350,10 +369,11 @@ namespace Jerry
         /// </summary>
         /// <param name="canvas">Canvas</param>
         /// <param name="tf">使用结果的UI结点，空则是相对Canvas</param>
+        /// <param name="checkCanvasName">检查Cavans的名字，子节点如果加了额外的Canvas，可以通过这个参数过滤找到最外层的Canvas</param>
         /// <returns></returns>
-        public static Vector3 PosMouse2Canvas(Canvas canvas, Transform tf = null)
+        public static Vector3 PosMouse2Canvas(Canvas canvas, Transform tf = null, string checkCanvasName = "")
         {
-            return JerryUtil.PosScreen2Canvas(canvas, JerryUtil.GetClickPos(), tf);
+            return JerryUtil.PosScreen2Canvas(canvas, JerryUtil.GetClickPos(), tf, checkCanvasName);
         }
 
         /// <summary>
@@ -363,8 +383,9 @@ namespace Jerry
         /// <param name="canvas">Canvas</param>
         /// <param name="pos">Screen Position</param>
         /// <param name="tf">使用结果的UI结点，空则是相对Canvas</param>
+        /// <param name="checkCanvasName">检查Cavans的名字，子节点如果加了额外的Canvas，可以通过这个参数过滤找到最外层的Canvas</param>
         /// <returns></returns>
-        public static Vector3 PosScreen2Canvas(Canvas canvas, Vector3 pos, Transform tf = null)
+        public static Vector3 PosScreen2Canvas(Canvas canvas, Vector3 pos, Transform tf = null, string checkCanvasName = "")
         {
             RectTransform canvasRect = canvas.transform as RectTransform;
             Vector2 viewportPos = new Vector2(pos.x / Screen.width, pos.y / Screen.height);
@@ -373,7 +394,7 @@ namespace Jerry
             Vector3 relate = Vector3.zero;
             if (tf != null)
             {
-                relate = JerryUtil.CalUIPosRelateToCanvas(tf, false);
+                relate = JerryUtil.CalUIPosRelateToCanvas(tf, false, checkCanvasName);
             }
 
             ret = ret - relate;
