@@ -1,7 +1,0 @@
-∑÷¿‡£∫
-- JerryUtil-Android UNITY_ANDROID
-- JerryUtil-IOS UNITY_IOS
-- JerryUtil-Editor UNITY_EDITOR
-
-“¿¿µ£∫
-- Œﬁ
