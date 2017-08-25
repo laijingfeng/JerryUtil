@@ -35,7 +35,10 @@ namespace Jerry
                 go = GameObject.Instantiate(data.prefab) as GameObject;
             }
 
-            go.SetActive(data.active);
+            if (go.activeSelf != data.active)
+            {
+                go.SetActive(data.active);
+            }
             if (string.IsNullOrEmpty(data.name) == false)
             {
                 go.name = data.name;
@@ -57,7 +60,8 @@ namespace Jerry
                 go.transform.localEulerAngles = Vector3.zero;
             }
 
-            if (data.isStretchUI)
+            if (data.isStretchUI 
+                && go.transform is RectTransform)
             {
                 (go.transform as RectTransform).offsetMin = Vector2.zero;
                 (go.transform as RectTransform).offsetMax = Vector2.zero;
@@ -204,7 +208,7 @@ namespace Jerry
             return null;
         }
 
-        #endregion
+        #endregion 查找
 
         #region 删除
 
