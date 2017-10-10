@@ -623,5 +623,44 @@ namespace Jerry
         }
 
         #endregion 颜色处理
+
+        #region Shader处理
+
+        /// <summary>
+        /// 刷新Shader
+        /// </summary>
+        /// <param name="obj"></param>
+        private void RefreshShader(GameObject obj)
+        {
+            if (obj == null)
+            {
+                return;
+            }
+            Renderer[] render = obj.GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer re in render)
+            {
+                foreach (Material mat in re.sharedMaterials)
+                {
+                    if (mat != null)
+                    {
+                        RefreshShader(mat);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 刷新Shader
+        /// </summary>
+        /// <param name="mat"></param>
+        private void RefreshShader(Material mat)
+        {
+            if (mat != null && mat.shader != null)
+            {
+                mat.shader = Shader.Find(mat.shader.name);
+            }
+        }
+
+        #endregion Shader处理
     }
 }
