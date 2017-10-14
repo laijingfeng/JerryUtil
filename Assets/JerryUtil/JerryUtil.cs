@@ -630,7 +630,7 @@ namespace Jerry
         /// 刷新Shader
         /// </summary>
         /// <param name="obj"></param>
-        private void RefreshShader(GameObject obj)
+        public static void RefreshShader(GameObject obj)
         {
             if (obj == null)
             {
@@ -653,7 +653,7 @@ namespace Jerry
         /// 刷新Shader
         /// </summary>
         /// <param name="mat"></param>
-        private void RefreshShader(Material mat)
+        public static void RefreshShader(Material mat)
         {
             if (mat != null && mat.shader != null)
             {
