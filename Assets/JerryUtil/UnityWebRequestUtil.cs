@@ -6,6 +6,11 @@ namespace Jerry
 {
     public class UnityWebRequestUtil : Singleton<UnityWebRequestUtil>
     {
+        public UnityWebRequestUtil()
+        {
+            //不加默认构造函数，IL2CPP会报错
+        }
+
         /// <summary>
         /// 
         /// </summary>

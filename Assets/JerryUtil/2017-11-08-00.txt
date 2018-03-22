@@ -1,6 +1,0 @@
-∑÷¿‡£∫
-- JerryUtil
-
-“¿¿µ£∫
-- Singleton
-- JerryCoroutine
