@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
-using UnityEngine.Experimental.Networking;
+//using UnityEngine.Experimental.Networking;//Unity5.3.4f1
+using UnityEngine.Networking;
 
 namespace Jerry
 {
@@ -10,34 +11,51 @@ namespace Jerry
         {
             //不加默认构造函数，IL2CPP会报错
         }
+        
+        public enum HttpMethod
+        {
+            GET = 0,
+            POST,
+        }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="url"></param>
+        /// <param name="method"></param>
         /// <param name="callback">code-rsp-err</param>
-        public void Get(string url, Action<long, string, string> callback)
+        /// <param name="postData">post数据</param>
+        public void HttpRequest(string url, HttpMethod method, Action<long, string, string> callback = null, string postData = "")
         {
-            new JerryCoroutine.CorTask(IE_Get(url, callback));
+            new JerryCoroutine.CorTask(IE_HttpRequest(url, method, callback, postData));
         }
 
-        private IEnumerator IE_Get(string url, Action<long, string, string> callback)
+        private IEnumerator IE_HttpRequest(string url, HttpMethod method, Action<long, string, string> callback, string postData)
         {
-            using (UnityWebRequest r = UnityWebRequest.Get(url))
+            using (UnityWebRequest request = new UnityWebRequest(url))
             {
-                yield return r.Send();
-                if (r.isError)
+                request.method = method.ToString();
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("CLEARANCE", "I_AM_ADMIN");
+                request.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+                if (method == HttpMethod.POST)
+                {
+                    byte[] postBytes = System.Text.Encoding.Default.GetBytes(postData);
+                    request.uploadHandler = (UploadHandler)new UploadHandlerRaw(postBytes);
+                }
+                yield return request.Send();
+                if (request.isError)
                 {
                     if (callback != null)
                     {
-                        callback(r.responseCode, null, r.error);
+                        callback(request.responseCode, null, request.error);
                     }
                 }
                 else
                 {
                     if (callback != null)
                     {
-                        callback(r.responseCode, r.downloadHandler.text, null);
+                        callback(request.responseCode, request.downloadHandler.text, null);
                     }
                 }
             }

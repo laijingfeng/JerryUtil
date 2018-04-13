@@ -1,5 +1,6 @@
 {
-	"version": "2018-03-22-00",
+	"unity_version": "5.6.1f1",
+	"version": "2018-04-13-00",
 	"dependencies":[
 		"Singleton.dll",
 		"JerryCoroutine.dll",
