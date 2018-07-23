@@ -5,6 +5,27 @@ namespace Jerry
     public class JerryMath
     {
         /// <summary>
+        /// 点到直线的距离
+        /// </summary>
+        /// <param name="linePos">直线上一个点</param>
+        /// <param name="lineDir">直线的方向</param>
+        /// <param name="pos">点</param>
+        /// <returns></returns>
+        static public float DistancePoint2Line(Vector3 linePos, Vector3 lineDir, Vector3 pos)
+        {
+            Vector3 p1 = linePos;
+            Vector3 p2 = linePos + lineDir * 2;
+
+            float a = Vector3.Distance(p1, p2);
+            float b = Vector3.Distance(p1, pos);
+            float c = Vector3.Distance(p2, pos);
+
+            float p = 0.5f * (a + b + c);
+            float s = Mathf.Sqrt(p * (p - a) * (p - b) * (p - c));
+            return (2 * s / a);
+        }
+
+        /// <summary>
         /// <para>计算点是否在一个区域内部</para>
         /// <para>支持凸/凹多边形</para>
         /// </summary>
