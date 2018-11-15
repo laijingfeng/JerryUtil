@@ -1,11 +1,64 @@
-﻿using System;
+﻿//version: 2018-11-15-00
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace Jerry
 {
     public class JerryUtil
     {
+        #region 设置Layer
+
+        /// <summary>
+        /// SetLayer
+        /// </summary>
+        /// <param name="go"></param>
+        /// <param name="layerName"></param>
+        public static void SetLayer(GameObject go, string layerName)
+        {
+            if (null == go)
+            {
+                return;
+            }
+            go.layer = LayerMask.NameToLayer(layerName);
+        }
+
+        /// <summary>
+        /// SetLayerRecursively
+        /// </summary>
+        /// <param name="go"></param>
+        /// <param name="layerName"></param>
+        public static void SetLayerRecursively(GameObject go, string layerName)
+        {
+            SetLayerRecursively(go, LayerMask.NameToLayer(layerName));
+        }
+
+        /// <summary>
+        /// SetLayerRecursively
+        /// </summary>
+        /// <param name="go"></param>
+        /// <param name="layer"></param>
+        public static void SetLayerRecursively(GameObject go, int layer)
+        {
+            if (null == go)
+            {
+                return;
+            }
+            go.layer = layer;
+            foreach (Transform child in go.transform)
+            {
+                if (null == child)
+                {
+                    continue;
+                }
+                SetLayerRecursively(child.gameObject, layer);
+            }
+        }
+
+        #endregion 设置Layer
+
         #region 克隆对象
 
         /// <summary>
@@ -210,7 +263,7 @@ namespace Jerry
 
         #endregion 查找
 
-        #region 删除
+        #region 删除子节点
 
         /// <summary>
         /// 删除所有儿子结点
@@ -261,18 +314,136 @@ namespace Jerry
             DestroyAllChildren(comp.gameObject, immediate);
         }
 
-        #endregion 删除
+        #endregion 删除子节点
+
+        #region 屏幕位置
+
+        /// <summary>
+        /// <para>获得鼠标位置</para>
+        /// <para>移动设备用第一个触摸点</para>
+        /// <para>返回值z轴为0</para>
+        /// </summary>
+        /// <returns></returns>
+        public static Vector3 GetMousePos()
+        {
+            Vector3 pos = Input.mousePosition;
+            if (Application.platform == RuntimePlatform.Android
+                || Application.platform == RuntimePlatform.IPhonePlayer)
+            {
+                if (Input.touchCount > 0)
+                {
+                    pos = Input.touches[0].position;
+                }
+            }
+            pos.z = 0;
+            return pos;
+        }
+
+        /// <summary>
+        /// <para>当前鼠标位置(移动设备第一个触摸位置)点在EventSystem对象上面的信息</para>
+        /// </summary>
+        /// <returns></returns>
+        public static List<RaycastResult> PointerOverEventSystemGameObjectInfo()
+        {
+            return PointerOverEventSystemGameObjectInfo(GetMousePos());
+        }
+
+        /// <summary>
+        /// <para>指定屏幕位置点在EventSystem对象上面的信息</para>
+        /// </summary>
+        /// <returns></returns>
+        public static List<RaycastResult> PointerOverEventSystemGameObjectInfo(Vector3 screenPoint)
+        {
+            PointerEventData ed = new PointerEventData(EventSystem.current);
+            ed.position = screenPoint;
+            List<RaycastResult> results = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(ed, results);
+            return results;
+        }
+
+        /// <summary>
+        /// <para>当前鼠标位置(移动设备第一个触摸位置)点是否在EventSystem对象上面</para>
+        /// <para>可以指定Raycaster名称</para>
+        /// </summary>
+        /// <param name="raycasterNames"></param>
+        /// <returns></returns>
+        public static bool IsPointerOverEventSystemGameObject(params string[] raycasterNames)
+        {
+            if (raycasterNames != null && raycasterNames.Length > 0)
+            {
+                return IsPointerOverEventSystemGameObject(GetMousePos(), raycasterNames);
+            }
+            else
+            {
+                return EventSystem_IsPointerOverGameObject();
+            }
+        }
+
+        /// <summary>
+        /// <para>指定屏幕位置点是否在EventSystem对象上面</para>
+        /// <para>可以指定Raycaster名称</para>
+        /// </summary>
+        /// <param name="screenPoint"></param>
+        /// <param name="raycasterNames"></param>
+        /// <returns></returns>
+        public static bool IsPointerOverEventSystemGameObject(Vector3 screenPoint, params string[] raycasterNames)
+        {
+            PointerEventData ed = new PointerEventData(EventSystem.current);
+            ed.position = screenPoint;
+            List<RaycastResult> results = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(ed, results);
+            if (raycasterNames != null && raycasterNames.Length > 0)
+            {
+                List<string> raycasterNamesList = new List<string>(raycasterNames);
+                foreach (RaycastResult r in results)
+                {
+                    if (raycasterNamesList.Contains(r.module.name))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            else
+            {
+                return results.Count > 0;
+            }
+        }
+
+        /// <summary>
+        /// <para>当前鼠标位置(移动设备第一个触摸位置)点是否在EventSystem对象上面</para>
+        /// <para>EventSystem的IsPointerOverGameObject重新封装</para>
+        /// </summary>
+        /// <returns></returns>
+        private static bool EventSystem_IsPointerOverGameObject()
+        {
+            if (Application.platform == RuntimePlatform.Android
+                || Application.platform == RuntimePlatform.IPhonePlayer)
+            {
+                if (Input.touchCount > 0)
+                {
+                    return EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId);
+                }
+                return false;
+            }
+            else
+            {
+                return EventSystem.current.IsPointerOverGameObject();
+            }
+        }
+
+        #endregion 屏幕位置
 
         #region 坐标转化
 
         /// <summary>
-        /// <para>计算UI相对父节点的偏移量</para>
+        /// <para>计算UI节点相对Canvas的偏移量</para>
         /// <para>返回值z轴为0</para> 
         /// </summary>
-        /// <param name="child"></param>
-        /// <param name="includeSelf"></param>
+        /// <param name="child">计算的UI节点</param>
+        /// <param name="includeSelf">是否包括child自身的偏移</param>
         /// <param name="checkCanvasName">检查Cavans的名字，子节点如果加了额外的Canvas，可以通过这个参数过滤找到最外层的Canvas</param>
-        /// <returns>z轴为0</returns>
+        /// <returns></returns>
         public static Vector3 CalUIPosRelateToCanvas(Transform child, bool includeSelf = false, string checkCanvasName = "")
         {
             Vector2 ret = Vector2.zero;
@@ -282,7 +453,8 @@ namespace Jerry
             }
             if (includeSelf)
             {
-                ret += new Vector2(child.localPosition.x, child.localPosition.y);
+                ret.x += child.localPosition.x;
+                ret.y += child.localPosition.y;
             }
             while (child.parent != null)
             {
@@ -295,7 +467,8 @@ namespace Jerry
                         break;
                     }
                 }
-                ret += new Vector2(child.localPosition.x, child.localPosition.y);
+                ret.x += child.localPosition.x;
+                ret.y += child.localPosition.y;
             }
             return ret;
         }
@@ -318,7 +491,7 @@ namespace Jerry
             }
 
             ret = Camera.main.WorldToScreenPoint(pos);
-            ret = JerryUtil.PosScreen2Canvas(canvas, ret, tf, checkCanvasName);
+            ret = PosScreen2Canvas(canvas, ret, tf, checkCanvasName);
 
             return ret;
         }
@@ -339,7 +512,7 @@ namespace Jerry
                 return Vector2.zero;
             }
 
-            Vector2 pos = JerryUtil.CalUIPosRelateToCanvas(tf, true, checkCanvasName);
+            Vector2 pos = CalUIPosRelateToCanvas(tf, true, checkCanvasName);
             return PosCanvas2Screen(canvas, pos);
         }
 
@@ -377,7 +550,7 @@ namespace Jerry
         /// <returns></returns>
         public static Vector3 PosMouse2Canvas(Canvas canvas, Transform tf = null, string checkCanvasName = "")
         {
-            return JerryUtil.PosScreen2Canvas(canvas, JerryUtil.GetClickPos(), tf, checkCanvasName);
+            return PosScreen2Canvas(canvas, GetMousePos(), tf, checkCanvasName);
         }
 
         /// <summary>
@@ -398,7 +571,7 @@ namespace Jerry
             Vector3 relate = Vector3.zero;
             if (tf != null)
             {
-                relate = JerryUtil.CalUIPosRelateToCanvas(tf, false, checkCanvasName);
+                relate = CalUIPosRelateToCanvas(tf, false, checkCanvasName);
             }
 
             ret = ret - relate;
@@ -577,26 +750,32 @@ namespace Jerry
         }
 
         #endregion LayerMask处理
-
+        
         /// <summary>
-        /// <para>获得点击位置</para>
-        /// <para>移动设备用第一个触摸点</para>
-        /// <para>返回值z轴为0</para>
+        /// 获取Transform的Hieraichy路径
         /// </summary>
+        /// <param name="tf"></param>
         /// <returns></returns>
-        public static Vector3 GetClickPos()
+        static public string GetTransformHieraichyPath(Transform tf)
         {
-            Vector3 pos = Input.mousePosition;
-            if (Application.platform == RuntimePlatform.Android
-                || Application.platform == RuntimePlatform.IPhonePlayer)
+            if (tf == null)
             {
-                if (Input.touchCount > 0)
+                return string.Empty;
+            }
+            string path = tf.name;
+            while (tf.parent != null)
+            {
+                tf = tf.parent;
+                if (string.IsNullOrEmpty(path))
                 {
-                    pos = Input.touches[0].position;
+                    path = tf.name;
+                }
+                else
+                {
+                    path = tf.name + "/" + path;
                 }
             }
-            pos.z = 0;
-            return pos;
+            return path;
         }
 
         #region 颜色处理
